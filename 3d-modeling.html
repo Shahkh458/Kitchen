@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>3D Furniture Designer</title>
+  <link rel="stylesheet" href="styles/style.css">
+  <style>
+    #3d-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+    }
+    .modeling-controls {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 100;
+      background: rgba(255,255,255,0.8);
+      padding: 15px;
+      border-radius: 8px;
+      display: flex;
+      gap: 10px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="logo">
+      <img src="images/logo.png" alt="Furniture Logo">
+    </div>
+    <nav>
+      <ul>
+        <li><a href="index.html">Home</a></li>
+        <li><a href="products.html">Products</a></li>
+        <li><a href="kitchen-2d.html">2D Planner</a></li>
+        <li><a href="3d-modeling.html" class="active">3D Designer</a></li>
+        <li><a href="contact.html">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <div id="3d-container"></div>
+  
+  <div class="modeling-controls">
+    <button id="add-cabinet" class="btn">Add Cabinet</button>
+    <button id="add-sink" class="btn">Add Sink</button>
+    <button id="add-oven" class="btn">Add Oven</button>
+    <button id="clear-scene" class="btn danger">Clear All</button>
+    <button id="calculate-cost" class="btn primary">Calculate Cost</button>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r146/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.146.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.146.0/examples/js/loaders/GLTFLoader.js"></script>
+  <script src="scripts/three-app.js"></script>
+</body>
+</html>
