@@ -1,33 +1,32 @@
-// kitchen-planner.js
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize canvas with smaller dimensions
+    // Initialize canvas with scrollable container
     const canvas = new fabric.Canvas('kitchen-canvas', {
         selection: true,
         backgroundColor: '#f9f9f9',
         preserveObjectStacking: true,
-        renderOnAddRemove: false, // Better performance
-        skipTargetFind: false,
+        renderOnAddRemove: false,
         fireRightClick: true,
         stopContextMenu: true
     });
     
-    const container = document.querySelector('.canvas-container');
+    // Set smaller canvas dimensions (300% smaller than original)
+    const CANVAS_WIDTH = 2000;
+    const CANVAS_HEIGHT = 2000;
+    canvas.setWidth(CANVAS_WIDTH);
+    canvas.setHeight(CANVAS_HEIGHT);
     
-    // Set smaller canvas dimensions (1/4 of original)
-    const setCanvasSize = () => {
-        canvas.setWidth(container.offsetWidth);
-        canvas.setHeight(container.offsetHeight);
-        // Reduced virtual space (2500x2500 instead of 10000x10000)
-        canvas.setDimensions({ width: 2500, height: 2500 }, { backstoreOnly: true });
-    };
-    setCanvasSize();
+    // Make container scrollable
+    const container = document.querySelector('.canvas-container');
+    container.style.width = '700px';
+    container.style.height = '500px';
+    container.style.overflow = 'auto';
 
     // Constants
     const GRID_SIZE = 20; // 20px grid
     const SCALE = 5; // 1px = 5mm
     const DEFAULT_WALL_HEIGHT = 2700;
     const MIN_ZOOM = 0.1;
-    const MAX_ZOOM = 3; // Reduced max zoom
+    const MAX_ZOOM = 3;
     const ZOOM_FACTOR = 0.1;
     const WALL_COLOR = '#7e8aa1';
     const DOOR_COLOR = '#8a5a44';
@@ -45,24 +44,28 @@ document.addEventListener('DOMContentLoaded', function() {
     const objects = [];
 
     // UI Elements
-    const wallThicknessSelect = document.getElementById('wall-thickness');
+    const wallThicknessX = document.getElementById('wall-thickness-x');
+    const wallThicknessY = document.getElementById('wall-thickness-y');
     const wallHeightInput = document.getElementById('wall-height');
+    const doorWidthInput = document.getElementById('door-width');
+    const doorHeightInput = document.getElementById('door-height');
+    const windowWidthInput = document.getElementById('window-width');
+    const windowHeightInput = document.getElementById('window-height');
     const dimensionDisplay = document.getElementById('dimension-display');
     const zoomDisplay = document.getElementById('zoom-display');
 
-    // Optimized Grid Pattern
+    // Grid Pattern
     function createGrid() {
         const zoom = canvas.getZoom();
         const gridSize = GRID_SIZE * zoom;
-        const patternCanvas = document.createElement('canvas');
-        patternCanvas.width = gridSize;
-        patternCanvas.height = gridSize;
-        const ctx = patternCanvas.getContext('2d');
+        const gridCanvas = document.createElement('canvas');
+        gridCanvas.width = gridSize;
+        gridCanvas.height = gridSize;
+        const ctx = gridCanvas.getContext('2d');
         
         ctx.strokeStyle = '#e6e6e6';
-        ctx.lineWidth = Math.max(0.5, 1/zoom); // Minimum line width
+        ctx.lineWidth = 1 / zoom;
         
-        // Draw grid lines
         ctx.beginPath();
         ctx.moveTo(0.5, 0);
         ctx.lineTo(0.5, gridSize);
@@ -71,16 +74,16 @@ document.addEventListener('DOMContentLoaded', function() {
         ctx.stroke();
         
         return new fabric.Pattern({ 
-            source: patternCanvas, 
+            source: gridCanvas, 
             repeat: 'repeat'
         });
     }
 
     function updateGrid() {
-        requestAnimationFrame(() => {
-            canvas.setBackgroundColor(createGrid(), canvas.renderAll.bind(canvas));
-            updateZoomDisplay();
+        canvas.setBackgroundColor(createGrid(), function() {
+            canvas.renderAll();
         });
+        updateZoomDisplay();
     }
 
     function updateZoomDisplay() {
@@ -90,7 +93,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize grid
     updateGrid();
 
-    // Snap to grid with performance optimization
+    // Snap to grid
     function snapToGrid(point) {
         const zoom = canvas.getZoom();
         const grid = GRID_SIZE * zoom;
@@ -100,7 +103,7 @@ document.addEventListener('DOMContentLoaded', function() {
         };
     }
 
-    // Find nearest wall end with distance limit
+    // Find nearest wall end for snapping
     function findNearestWallEnd(point, threshold = GRID_SIZE * 1.5) {
         let nearestEnd = null;
         let minDistance = threshold * canvas.getZoom();
@@ -145,7 +148,6 @@ document.addEventListener('DOMContentLoaded', function() {
         canvas.defaultCursor = cursors[mode] || 'default';
         canvas.selection = mode === 'select';
         
-        // Optimized object event handling
         canvas.forEachObject(obj => {
             obj.set({
                 selectable: mode === 'select' || mode === 'delete',
@@ -163,25 +165,36 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Wall Drawing Functions (optimized)
+    // Wall Drawing with different X/Y thickness
     function startWallDrawing(start) {
         isDrawing = true;
         startPoint = start;
         
         currentWall = new fabric.Line([start.x, start.y, start.x, start.y], {
             stroke: WALL_COLOR,
-            strokeWidth: parseInt(wallThicknessSelect.value) / SCALE,
+            strokeWidth: getWallThickness(start, start),
             selectable: false,
             hasControls: false,
             hasBorders: false,
             objectType: 'wall',
-            thickness: parseInt(wallThicknessSelect.value),
+            thicknessX: parseInt(wallThicknessX.value),
+            thicknessY: parseInt(wallThicknessY.value),
             height: parseInt(wallHeightInput.value) || DEFAULT_WALL_HEIGHT,
             strokeUniform: true,
             strokeLineCap: 'round'
         });
         
         canvas.add(currentWall);
+    }
+
+    function getWallThickness(start, end) {
+        const dx = Math.abs(end.x - start.x);
+        const dy = Math.abs(end.y - start.y);
+        
+        // Use X thickness for horizontal walls, Y for vertical
+        return (dx > dy) ? 
+            parseInt(wallThicknessX.value) / SCALE : 
+            parseInt(wallThicknessY.value) / SCALE;
     }
 
     function updateWallDrawing(end) {
@@ -191,17 +204,21 @@ document.addEventListener('DOMContentLoaded', function() {
         const nearestEnd = findNearestWallEnd(endPoint);
         if (nearestEnd) endPoint = nearestEnd;
 
-        currentWall.set({ x2: endPoint.x, y2: endPoint.y });
+        // Update thickness based on direction
+        const thickness = getWallThickness(startPoint, endPoint);
         
-        // Throttle dimension display updates
-        if (!this.lastUpdate || Date.now() - this.lastUpdate > 100) {
-            const length = Math.sqrt(
-                Math.pow(currentWall.x2 - currentWall.x1, 2) + 
-                Math.pow(currentWall.y2 - currentWall.y1, 2)
-            );
-            dimensionDisplay.textContent = `${Math.round(length * SCALE)}mm`;
-            this.lastUpdate = Date.now();
-        }
+        currentWall.set({ 
+            x2: endPoint.x, 
+            y2: endPoint.y,
+            strokeWidth: thickness
+        });
+        
+        // Update dimensions display
+        const length = Math.sqrt(
+            Math.pow(currentWall.x2 - currentWall.x1, 2) + 
+            Math.pow(currentWall.y2 - currentWall.y1, 2)
+        );
+        dimensionDisplay.textContent = `${Math.round(length * SCALE)}mm`;
         
         canvas.requestRenderAll();
     }
@@ -236,8 +253,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Opening Creation (Doors/Windows)
     function createOpening(type, wall, position) {
-        const openingWidth = type === 'door' ? 900 : 1200; // mm
-        const openingHeight = type === 'door' ? 2100 : 1200; // mm
+        const width = type === 'door' ? 
+            parseInt(doorWidthInput.value) : 
+            parseInt(windowWidthInput.value);
+        
+        const height = type === 'door' ? 
+            parseInt(doorHeightInput.value) : 
+            parseInt(windowHeightInput.value);
+        
         const color = type === 'door' ? DOOR_COLOR : WINDOW_COLOR;
         
         // Calculate position along wall
@@ -247,8 +270,8 @@ document.addEventListener('DOMContentLoaded', function() {
         );
         
         const opening = new fabric.Rect({
-            width: openingWidth / SCALE,
-            height: openingHeight / SCALE,
+            width: width / SCALE,
+            height: height / SCALE,
             fill: color,
             opacity: 0.7,
             stroke: 'rgba(0,0,0,0.5)',
@@ -274,11 +297,10 @@ document.addEventListener('DOMContentLoaded', function() {
         canvas.requestRenderAll();
     }
 
-    // Item Placement (optimized)
+    // Item Placement
     function placeItem(position) {
         const { type, width, height } = currentItemType;
         
-        // Use simple rectangles instead of images for performance
         const item = new fabric.Rect({
             left: position.x,
             top: position.y,
@@ -306,14 +328,12 @@ document.addEventListener('DOMContentLoaded', function() {
             'base-cabinet': 'rgba(139, 69, 19, 0.7)',
             'wall-cabinet': 'rgba(160, 82, 45, 0.7)',
             'refrigerator': 'rgba(220, 220, 220, 0.7)',
-            'oven': 'rgba(100, 100, 100, 0.7)',
-            'door': DOOR_COLOR,
-            'window': WINDOW_COLOR
+            'oven': 'rgba(100, 100, 100, 0.7)'
         };
         return colors[type] || 'rgba(200, 200, 200, 0.7)';
     }
 
-    // Optimized Event Handlers
+    // Event Handlers
     function initEventHandlers() {
         // Canvas Events
         canvas.on('mouse:down', (options) => {
@@ -347,7 +367,6 @@ document.addEventListener('DOMContentLoaded', function() {
             else if (currentMode === 'door' || currentMode === 'window') {
                 const target = canvas.findTarget(options.e);
                 if (target?.objectType === 'wall') {
-                    const pointer = canvas.getPointer(options.e);
                     const wallPoint = target.getLocalPoint(pointer);
                     createOpening(currentMode, target, wallPoint.x);
                 }
@@ -361,7 +380,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 lastPosX = options.e.clientX;
                 lastPosY = options.e.clientY;
                 
-                canvas.relativePan({ x: deltaX, y: deltaY });
+                container.scrollLeft -= deltaX;
+                container.scrollTop -= deltaY;
                 updateGrid();
                 return;
             }
@@ -383,7 +403,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
-        // Optimized zoom handler
+        // Zoom with mouse wheel
         canvas.on('mouse:wheel', (options) => {
             options.e.preventDefault();
             
@@ -400,27 +420,72 @@ document.addEventListener('DOMContentLoaded', function() {
             updateGrid();
         });
 
-        // UI Event Delegation (better performance)
-        document.addEventListener('click', (e) => {
-            if (e.target.matches('.tool-button')) {
-                const mode = e.target.id.replace('-mode', '');
-                setMode(mode);
+        // UI Events
+        document.getElementById('select-mode').addEventListener('click', () => setMode('select'));
+        document.getElementById('wall-mode').addEventListener('click', () => setMode('wall'));
+        document.getElementById('door-mode').addEventListener('click', () => setMode('door'));
+        document.getElementById('window-mode').addEventListener('click', () => setMode('window'));
+        document.getElementById('delete-mode').addEventListener('click', () => setMode('delete'));
+        
+        document.getElementById('clear-all').addEventListener('click', function() {
+            if (confirm('Are you sure you want to clear the entire design?')) {
+                canvas.clear();
+                objects.length = 0;
+                updateGrid();
             }
-            else if (e.target.matches('.design-item')) {
-                setMode('place', {
-                    type: e.target.dataset.type,
-                    width: parseInt(e.target.dataset.width),
-                    height: parseInt(e.target.dataset.height)
-                });
-            }
-            else if (e.target.matches('.category-tab')) {
+        });
+
+        document.getElementById('view-3d').addEventListener('click', function() {
+            const designData = { walls: [], items: [], settings: { scale: SCALE } };
+            
+            objects.forEach(obj => {
+                if (obj.objectType === 'wall') {
+                    designData.walls.push({
+                        x1: obj.x1,
+                        y1: obj.y1,
+                        x2: obj.x2,
+                        y2: obj.y2,
+                        thicknessX: obj.thicknessX,
+                        thicknessY: obj.thicknessY,
+                        height: obj.height
+                    });
+                } else {
+                    designData.items.push({
+                        type: obj.objectType,
+                        x: obj.left,
+                        y: obj.top,
+                        width: obj.width * (obj.scaleX || 1),
+                        height: obj.height * (obj.scaleY || 1),
+                        rotation: obj.angle || 0
+                    });
+                }
+            });
+            
+            localStorage.setItem('kitchenDesign', JSON.stringify(designData));
+            window.open('3d-modeling.html', '_blank');
+        });
+
+        // Category Tabs
+        document.querySelectorAll('.category-tab').forEach(tab => {
+            tab.addEventListener('click', function() {
                 document.querySelectorAll('.category-tab').forEach(t => 
-                    t.classList.toggle('active', t === e.target)
+                    t.classList.toggle('active', t === this)
                 );
                 document.querySelectorAll('.category-content').forEach(c => 
-                    c.style.display = c.id === `${e.target.dataset.category}-content` ? 'block' : 'none'
+                    c.style.display = c.id === `${this.dataset.category}-content` ? 'block' : 'none'
                 );
-            }
+            });
+        });
+
+        // Design Items
+        document.querySelectorAll('.design-item').forEach(item => {
+            item.addEventListener('click', function() {
+                setMode('place', {
+                    type: this.dataset.type,
+                    width: parseInt(this.dataset.width),
+                    height: parseInt(this.dataset.height)
+                });
+            });
         });
 
         // Window resize with debounce
@@ -428,7 +493,6 @@ document.addEventListener('DOMContentLoaded', function() {
         window.addEventListener('resize', () => {
             clearTimeout(resizeTimeout);
             resizeTimeout = setTimeout(() => {
-                setCanvasSize();
                 updateGrid();
             }, 100);
         });
@@ -438,23 +502,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function init() {
         setMode('select');
         initEventHandlers();
-        
-        // Add zoom controls
-        document.getElementById('zoom-in').addEventListener('click', () => {
-            canvas.setZoom(Math.min(canvas.getZoom() + ZOOM_FACTOR, MAX_ZOOM));
-            updateGrid();
-        });
-        
-        document.getElementById('zoom-out').addEventListener('click', () => {
-            canvas.setZoom(Math.max(canvas.getZoom() - ZOOM_FACTOR, MIN_ZOOM));
-            updateGrid();
-        });
-        
-        document.getElementById('reset-zoom').addEventListener('click', () => {
-            canvas.setZoom(1).viewportTransform[4] = 0;
-            canvas.viewportTransform[5] = 0;
-            updateGrid();
-        });
+        updateGrid();
     }
 
     init();
