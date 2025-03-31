@@ -1,47 +1,165 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>3D Furniture Designer</title>
-  <link rel="stylesheet" href="styles/style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Kitchen Viewer | Advik Kitchens</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <style>
+        body { margin: 0; overflow: hidden; }
+        #3d-container { width: 100%; height: 100vh; }
+        .toolbar {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(255,255,255,0.8);
+            padding: 10px;
+            border-radius: 5px;
+            z-index: 100;
+        }
+        .view-options {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255,255,255,0.8);
+            padding: 10px;
+            border-radius: 5px;
+            z-index: 100;
+        }
+    </style>
 </head>
 <body>
-  <header>
-    <div class="logo">
-      <img src="images/logo.png" alt="Furniture Logo">
+    <div id="3d-container"></div>
+    <div class="toolbar">
+        <button id="back-to-2d" class="btn">← Back to 2D</button>
     </div>
-    <nav>
-      <ul>
-        <li><a href="index.html">Home</a></li>
-        <li><a href="products.html">Products</a></li>
-        <li><a href="kitchen-2d.html">2D Planner</a></li>
-        <li><a href="3d-modeling.html" class="active">3D Designer</a></li>
-        <li><a href="contact.html">Contact</a></li>
-      </ul>
-    </nav>
-  </header>
+    <div class="view-options">
+        <button id="top-view" class="btn">Top View</button>
+        <button id="front-view" class="btn">Front View</button>
+        <button id="reset-view" class="btn">Reset View</button>
+    </div>
 
-  <div id="3d-container"></div>
-  
-  <div class="modeling-controls">
-    <button id="add-wall" class="btn">Add Wall</button>
-    <button id="add-base-cabinet" class="btn">Add Base Cabinet</button>
-    <button id="add-wall-cabinet" class="btn">Add Wall Cabinet</button>
-    <button id="add-tall-unit" class="btn">Add Tall Unit</button>
-    <button id="add-sink" class="btn">Add Sink</button>
-    <button id="add-oven" class="btn">Add Oven</button>
-    <button id="clear-scene" class="btn danger">Clear All</button>
-    <button id="calculate-cost" class="btn primary">Calculate Cost</button>
-  </div>
-
-  <footer>
-    <p>&copy; 2025 Advik Kitchens And Interiors. All rights reserved.</p>
-  </footer>
-
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r146/three.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.146.0/examples/js/controls/OrbitControls.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/three@0.146.0/examples/js/loaders/GLTFLoader.js"></script>
-  <script src="scripts/three-app.js"></script>
+    <script>
+        // Initialize Three.js scene
+        const container = document.getElementById('3d-container');
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0xf0f0f0);
+        
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(5, 5, 5);
+        
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        container.appendChild(renderer.domElement);
+        
+        // Controls
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.25;
+        
+        // Lighting
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+        scene.add(ambientLight);
+        
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        directionalLight.position.set(5, 10, 7);
+        directionalLight.castShadow = true;
+        directionalLight.shadow.mapSize.width = 2048;
+        directionalLight.shadow.mapSize.height = 2048;
+        scene.add(directionalLight);
+        
+        // Load design from 2D
+        const designData = JSON.parse(localStorage.getItem('kitchenDesign')) || { walls: [], items: [] };
+        
+        // Scale factor (1 unit in Three.js = 1 meter)
+        const SCALE = 0.001; // Convert mm to meters
+        
+        // Create walls
+        designData.walls.forEach(wall => {
+            const length = Math.sqrt(
+                Math.pow(wall.x2 - wall.x1, 2) + 
+                Math.pow(wall.y2 - wall.y1, 2)
+            ) * SCALE;
+            
+            const wallGeometry = new THREE.BoxGeometry(
+                length,
+                wall.height * SCALE,
+                wall.thickness * SCALE
+            );
+            
+            const wallMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0x7e8aa1 
+            });
+            
+            const wallMesh = new THREE.Mesh(wallGeometry, wallMaterial);
+            wallMesh.castShadow = true;
+            wallMesh.receiveShadow = true;
+            
+            // Position and rotate wall
+            const angle = Math.atan2(
+                wall.y2 - wall.y1,
+                wall.x2 - wall.x1
+            );
+            
+            wallMesh.position.set(
+                (wall.x1 + (wall.x2 - wall.x1)/2) * SCALE,
+                (wall.height/2) * SCALE,
+                0
+            );
+            
+            wallMesh.rotation.y = -angle;
+            
+            scene.add(wallMesh);
+        });
+        
+        // Create floor
+        const floorGeometry = new THREE.PlaneGeometry(10, 10);
+        const floorMaterial = new THREE.MeshStandardMaterial({ 
+            color: 0xdddddd,
+            side: THREE.DoubleSide
+        });
+        const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+        floor.rotation.x = -Math.PI / 2;
+        floor.receiveShadow = true;
+        scene.add(floor);
+        
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+        animate();
+        
+        // View controls
+        document.getElementById('top-view').addEventListener('click', function() {
+            camera.position.set(0, 10, 0.1);
+            camera.lookAt(0, 0, 0);
+        });
+        
+        document.getElementById('front-view').addEventListener('click', function() {
+            camera.position.set(0, 2, 10);
+            camera.lookAt(0, 0, 0);
+        });
+        
+        document.getElementById('reset-view').addEventListener('click', function() {
+            camera.position.set(5, 5, 5);
+            camera.lookAt(0, 0, 0);
+        });
+        
+        document.getElementById('back-to-2d').addEventListener('click', function() {
+            window.location.href = 'kitchen-2d.html';
+        });
+        
+        // Handle window resize
+        window.addEventListener('resize', function() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
 </body>
 </html>

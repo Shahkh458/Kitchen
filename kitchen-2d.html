@@ -1,49 +1,671 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>2D Kitchen Modeling - Furniture Website</title>
-  <link rel="stylesheet" href="styles/style.css">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.2.4/fabric.min.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kitchen Planner</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+        .app-container {
+            display: flex;
+            height: 100vh;
+        }
+        .toolbar {
+            width: 250px;
+            background: #f0f0f0;
+            padding: 10px;
+            border-right: 1px solid #ccc;
+            overflow-y: auto;
+        }
+        .canvas-container {
+            flex-grow: 1;
+            position: relative;
+            overflow: hidden;
+        }
+        #kitchen-canvas {
+            background-color: #f9f9f9;
+        }
+        .tool-button {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 5px;
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .tool-button.active {
+            background: #4CAF50;
+            color: white;
+        }
+        .category-tab {
+            padding: 8px;
+            margin: 5px 0;
+            background: #e0e0e0;
+            cursor: pointer;
+        }
+        .category-tab.active {
+            background: #4CAF50;
+            color: white;
+        }
+        .category-content {
+            display: none;
+            padding: 10px;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+        .design-item {
+            display: inline-block;
+            width: 80px;
+            height: 80px;
+            margin: 5px;
+            background: #eee;
+            border: 1px solid #ddd;
+            text-align: center;
+            line-height: 80px;
+            cursor: pointer;
+        }
+        .status-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #333;
+            color: white;
+            padding: 5px 10px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .zoom-controls {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 5px;
+            z-index: 100;
+        }
+    </style>
 </head>
 <body>
-  <header>
-    <div class="logo">
-      <img src="images/logo.png" alt="Furniture Logo">
+    <div class="app-container">
+        <div class="toolbar">
+            <h2>Tools</h2>
+            <button id="select-mode" class="tool-button active">Select</button>
+            <button id="add-wall" class="tool-button">Add Wall</button>
+            <button id="delete-mode" class="tool-button">Delete</button>
+            <button id="clear-all" class="tool-button">Clear All</button>
+            
+            <h2>Wall Settings</h2>
+            <label for="wall-thickness">Wall Thickness (mm):</label>
+            <select id="wall-thickness" class="tool-button">
+                <option value="100">100mm</option>
+                <option value="150" selected>150mm</option>
+                <option value="200">200mm</option>
+            </select>
+            
+            <label for="wall-height">Wall Height (mm):</label>
+            <input type="number" id="wall-height" class="tool-button" value="2700">
+            
+            <h2>Categories</h2>
+            <div class="category-tab active" data-category="cabinets">Cabinets</div>
+            <div id="cabinets-content" class="category-content" style="display: block;">
+                <div class="design-item" data-type="base-cabinet" data-width="600" data-height="720">Base 600</div>
+                <div class="design-item" data-type="base-cabinet" data-width="800" data-height="720">Base 800</div>
+                <div class="design-item" data-type="wall-cabinet" data-width="600" data-height="720">Wall 600</div>
+            </div>
+            
+            <div class="category-tab" data-category="appliances">Appliances</div>
+            <div id="appliances-content" class="category-content">
+                <div class="design-item" data-type="refrigerator" data-width="700" data-height="1800">Fridge</div>
+                <div class="design-item" data-type="oven" data-width="600" data-height="600">Oven</div>
+            </div>
+        </div>
+        
+        <div class="canvas-container">
+            <canvas id="kitchen-canvas"></canvas>
+            
+            <div class="zoom-controls">
+                <button id="zoom-in">+</button>
+                <button id="zoom-out">-</button>
+                <button id="reset-zoom">100%</button>
+            </div>
+        </div>
+        
+        <div class="status-bar">
+            <div id="dimension-display">Ready</div>
+            <div id="zoom-display">100%</div>
+            <button id="view-3d">View in 3D</button>
+        </div>
     </div>
-    <nav>
-      <ul>
-        <li><a href="index.html">Home</a></li>
-        <li><a href="products.html">Products</a></li>
-        <li><a href="kitchen-2d.html" class="active">2D Planner</a></li>
-        <li><a href="3d-modeling.html">3D Designer</a></li>
-        <li><a href="contact.html">Contact</a></li>
-      </ul>
-    </nav>
-  </header>
 
-  <section class="kitchen-2d">
-    <h2>2D Kitchen Modeling</h2>
-    <div class="toolbar">
-      <button id="add-wall">Add Wall</button>
-      <button id="add-window">Add Window</button>
-      <button id="add-door">Add Door</button>
-      <button id="add-base-cabinet">Add Base Cabinet</button>
-      <button id="add-wall-cabinet">Add Wall Cabinet</button>
-      <button id="add-tall-unit">Add Tall Unit</button>
-      <button id="add-sink">Add Sink</button>
-      <button id="add-oven">Add Oven</button>
-      <button id="clear-canvas">Clear Canvas</button>
-      <button id="calculate-cost">Calculate Cost</button>
-    </div>
-    <canvas id="kitchen-canvas" width="800" height="600"></canvas>
-  </section>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize canvas
+        const canvas = new fabric.Canvas('kitchen-canvas', {
+            selection: true,
+            backgroundColor: '#f9f9f9',
+            preserveObjectStacking: true,
+            fireRightClick: true,
+            stopContextMenu: true,
+            renderOnAddRemove: false
+        });
+        
+        const container = document.querySelector('.canvas-container');
+        
+        // Set canvas size to container
+        const setCanvasSize = () => {
+            canvas.setWidth(container.offsetWidth);
+            canvas.setHeight(container.offsetHeight);
+            // Large virtual space for panning
+            canvas.setDimensions({ width: 10000, height: 10000 }, { backstoreOnly: true });
+        };
+        setCanvasSize();
 
-  <footer>
-    <p>&copy; 2025 Advik Kitchens And Interiors. All rights reserved.</p>
-  </footer>
+        // Constants
+        const GRID_SIZE = 20; // 20px grid
+        const SCALE = 5; // 1px = 5mm
+        const DEFAULT_WALL_HEIGHT = 2700; // Default wall height in mm
+        const MIN_ZOOM = 0.1;
+        const MAX_ZOOM = 5;
+        const ZOOM_FACTOR = 0.1;
 
-  <script src="scripts/kitchen-2d.js"></script>
+        // State
+        let currentMode = 'select'; // 'select', 'wall', 'delete', 'place'
+        let currentItemType = null;
+        let isDrawing = false;
+        let startPoint = null;
+        let currentWall = null;
+        let isPanning = false;
+        let lastPosX = 0;
+        let lastPosY = 0;
+        const objects = [];
+
+        // UI Elements
+        const wallThicknessSelect = document.getElementById('wall-thickness');
+        const wallHeightInput = document.getElementById('wall-height');
+        const dimensionDisplay = document.getElementById('dimension-display');
+        const zoomDisplay = document.getElementById('zoom-display');
+
+        // Grid Pattern
+        function createGrid() {
+            const zoom = canvas.getZoom();
+            const gridSize = GRID_SIZE * zoom;
+            const gridCanvas = document.createElement('canvas');
+            gridCanvas.width = gridSize;
+            gridCanvas.height = gridSize;
+            const ctx = gridCanvas.getContext('2d');
+            
+            ctx.strokeStyle = '#e6e6e6';
+            ctx.lineWidth = 1 / zoom;
+            
+            ctx.beginPath();
+            ctx.moveTo(0, gridSize - 0.5);
+            ctx.lineTo(gridSize, gridSize - 0.5);
+            ctx.moveTo(gridSize - 0.5, 0);
+            ctx.lineTo(gridSize - 0.5, gridSize);
+            ctx.stroke();
+            
+            return new fabric.Pattern({ 
+                source: gridCanvas, 
+                repeat: 'repeat',
+                offsetX: -canvas.viewportTransform[4] % gridSize,
+                offsetY: -canvas.viewportTransform[5] % gridSize
+            });
+        }
+
+        function updateGrid() {
+            canvas.setBackgroundColor(createGrid(), function() {
+                canvas.renderAll();
+            });
+            updateZoomDisplay();
+        }
+
+        function updateZoomDisplay() {
+            zoomDisplay.textContent = `${Math.round(canvas.getZoom() * 100)}%`;
+        }
+
+        // Initialize grid
+        updateGrid();
+
+        // Snap to grid (zoom-aware)
+        function snapToGrid(point) {
+            const zoom = canvas.getZoom();
+            return {
+                x: Math.round(point.x / (GRID_SIZE * zoom)) * (GRID_SIZE * zoom),
+                y: Math.round(point.y / (GRID_SIZE * zoom)) * (GRID_SIZE * zoom)
+            };
+        }
+
+        // Find nearest wall end for snapping
+        function findNearestWallEnd(point, threshold = GRID_SIZE) {
+            let nearestEnd = null;
+            let minDistance = Infinity;
+            const zoom = canvas.getZoom();
+            
+            objects.forEach(obj => {
+                if (obj.objectType === 'wall') {
+                    const ends = [
+                        { x: obj.x1, y: obj.y1 },
+                        { x: obj.x2, y: obj.y2 }
+                    ];
+                    ends.forEach(end => {
+                        const distance = Math.sqrt(Math.pow(point.x - end.x, 2) + Math.pow(point.y - end.y, 2));
+                        if (distance < minDistance && distance < (threshold * zoom)) {
+                            minDistance = distance;
+                            nearestEnd = end;
+                        }
+                    });
+                }
+            });
+            return nearestEnd;
+        }
+
+        // Mode Management
+        function setSelectMode() {
+            currentMode = 'select';
+            currentItemType = null;
+            canvas.defaultCursor = 'default';
+            canvas.selection = true;
+            canvas.forEachObject(obj => {
+                obj.set({
+                    selectable: true,
+                    evented: true
+                });
+            });
+            canvas.discardActiveObject();
+            updateUI();
+            canvas.renderAll();
+        }
+
+        function setWallMode() {
+            currentMode = 'wall';
+            currentItemType = null;
+            canvas.defaultCursor = 'crosshair';
+            canvas.selection = false;
+            canvas.forEachObject(obj => {
+                obj.set({
+                    selectable: false,
+                    evented: false
+                });
+            });
+            canvas.discardActiveObject();
+            updateUI();
+            canvas.renderAll();
+        }
+
+        function setDeleteMode() {
+            currentMode = 'delete';
+            currentItemType = null;
+            canvas.defaultCursor = 'pointer';
+            canvas.selection = false;
+            canvas.forEachObject(obj => {
+                obj.set({
+                    selectable: true,
+                    evented: true
+                });
+            });
+            canvas.discardActiveObject();
+            updateUI();
+            canvas.renderAll();
+        }
+
+        function setPlaceMode(type, width, height) {
+            currentMode = 'place';
+            currentItemType = { type, width, height };
+            canvas.defaultCursor = 'pointer';
+            canvas.selection = false;
+            canvas.forEachObject(obj => {
+                obj.set({
+                    selectable: false,
+                    evented: false
+                });
+            });
+            canvas.discardActiveObject();
+            updateUI();
+            canvas.renderAll();
+        }
+
+        function updateUI() {
+            // Update button states
+            document.querySelectorAll('.tool-button').forEach(btn => btn.classList.remove('active'));
+            if (currentMode === 'select') document.getElementById('select-mode').classList.add('active');
+            if (currentMode === 'wall') document.getElementById('add-wall').classList.add('active');
+            if (currentMode === 'delete') document.getElementById('delete-mode').classList.add('active');
+        }
+
+        // Wall Drawing Functions
+        function startWallDrawing(start) {
+            isDrawing = true;
+            startPoint = start;
+            currentWall = new fabric.Line([start.x, start.y, start.x, start.y], {
+                stroke: '#7e8aa1',
+                strokeWidth: parseInt(wallThicknessSelect.value) / SCALE,
+                selectable: false,
+                hasControls: false,
+                hasBorders: false,
+                objectType: 'wall',
+                thickness: parseInt(wallThicknessSelect.value),
+                height: parseInt(wallHeightInput.value) || DEFAULT_WALL_HEIGHT,
+                strokeUniform: true,
+                strokeLineCap: 'round',
+                originX: 'center',
+                originY: 'center'
+            });
+            canvas.add(currentWall);
+            canvas.renderAll();
+        }
+
+        function updateWallDrawing(end) {
+            if (!currentWall) return;
+            
+            let endPoint = end;
+            const nearestEnd = findNearestWallEnd(endPoint);
+            if (nearestEnd) endPoint = nearestEnd;
+
+            // Update wall position
+            currentWall.set({
+                x2: endPoint.x,
+                y2: endPoint.y
+            });
+
+            // Calculate and display length
+            const length = Math.sqrt(
+                Math.pow(currentWall.x2 - currentWall.x1, 2) + 
+                Math.pow(currentWall.y2 - currentWall.y1, 2)
+            );
+            dimensionDisplay.textContent = `${Math.round(length * SCALE)}mm`;
+            canvas.renderAll();
+        }
+
+        function finalizeWall() {
+            if (!currentWall) return;
+            
+            const length = Math.sqrt(
+                Math.pow(currentWall.x2 - currentWall.x1, 2) + 
+                Math.pow(currentWall.y2 - currentWall.y1, 2)
+            );
+            
+            if (length > (GRID_SIZE * canvas.getZoom()) / 2) {
+                currentWall.set({
+                    selectable: true,
+                    hasControls: true,
+                    hasBorders: true,
+                    lockScalingX: true,
+                    lockScalingY: true,
+                    lockRotation: true,
+                    lockMovementX: false,
+                    lockMovementY: false
+                });
+                objects.push(currentWall);
+            } else {
+                canvas.remove(currentWall);
+            }
+            
+            isDrawing = false;
+            currentWall = null;
+            dimensionDisplay.textContent = '';
+            canvas.renderAll();
+        }
+
+        // Item Placement
+        function placeItem(position) {
+            const { type, width, height } = currentItemType;
+            
+            // Create a rectangle as placeholder
+            const rect = new fabric.Rect({
+                left: position.x,
+                top: position.y,
+                width: width / SCALE,
+                height: height / SCALE,
+                fill: 'rgba(200, 200, 200, 0.7)',
+                stroke: '#666',
+                strokeWidth: 1,
+                originX: 'center',
+                originY: 'center',
+                objectType: type,
+                selectable: true,
+                hasControls: true,
+                hasBorders: true,
+                lockUniScaling: true
+            });
+            
+            canvas.add(rect);
+            objects.push(rect);
+            canvas.renderAll();
+            
+            setSelectMode();
+        }
+
+        // UI Event Listeners
+        document.getElementById('select-mode').addEventListener('click', setSelectMode);
+        document.getElementById('add-wall').addEventListener('click', setWallMode);
+        document.getElementById('delete-mode').addEventListener('click', setDeleteMode);
+        
+        document.getElementById('clear-all').addEventListener('click', function() {
+            if (confirm('Are you sure you want to clear the entire design?')) {
+                canvas.clear();
+                objects.length = 0;
+                updateGrid();
+            }
+        });
+
+        document.getElementById('view-3d').addEventListener('click', function() {
+            const designData = { walls: [], items: [], settings: { scale: SCALE } };
+            
+            objects.forEach(obj => {
+                if (obj.objectType === 'wall') {
+                    designData.walls.push({
+                        x1: obj.x1,
+                        y1: obj.y1,
+                        x2: obj.x2,
+                        y2: obj.y2,
+                        thickness: obj.thickness,
+                        height: obj.height
+                    });
+                } else {
+                    designData.items.push({
+                        type: obj.objectType,
+                        x: obj.left,
+                        y: obj.top,
+                        width: obj.width * (obj.scaleX || 1),
+                        height: obj.height * (obj.scaleY || 1),
+                        rotation: obj.angle || 0
+                    });
+                }
+            });
+            
+            localStorage.setItem('kitchenDesign', JSON.stringify(designData));
+            window.open('3d-modeling.html', '_blank');
+        });
+
+        // Category Tabs
+        document.querySelectorAll('.category-tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                document.querySelectorAll('.category-tab').forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+                document.querySelectorAll('.category-content').forEach(c => c.style.display = 'none');
+                document.getElementById(`${this.dataset.category}-content`).style.display = 'block';
+                setSelectMode();
+            });
+        });
+
+        // Design Items
+        document.querySelectorAll('.design-item').forEach(item => {
+            item.addEventListener('click', function() {
+                setPlaceMode(
+                    this.dataset.type,
+                    parseInt(this.dataset.width),
+                    parseInt(this.dataset.height)
+                );
+            });
+        });
+
+        // Zoom Controls
+        document.getElementById('zoom-in').addEventListener('click', function() {
+            const zoom = Math.min(canvas.getZoom() + ZOOM_FACTOR, MAX_ZOOM);
+            canvas.setZoom(zoom);
+            updateGrid();
+        });
+
+        document.getElementById('zoom-out').addEventListener('click', function() {
+            const zoom = Math.max(canvas.getZoom() - ZOOM_FACTOR, MIN_ZOOM);
+            canvas.setZoom(zoom);
+            updateGrid();
+        });
+
+        document.getElementById('reset-zoom').addEventListener('click', function() {
+            canvas.setZoom(1);
+            canvas.viewportTransform[4] = 0;
+            canvas.viewportTransform[5] = 0;
+            updateGrid();
+        });
+
+        // Canvas Event Handlers
+        canvas.on('mouse:down', function(options) {
+            // Handle right-click for panning
+            if (options.e.button === 2 || options.e.ctrlKey || options.e.metaKey) {
+                isPanning = true;
+                lastPosX = options.e.clientX;
+                lastPosY = options.e.clientY;
+                canvas.defaultCursor = 'grabbing';
+                return;
+            }
+
+            const pointer = canvas.getPointer(options.e);
+            const snappedPoint = snapToGrid(pointer);
+            const nearestEnd = findNearestWallEnd(snappedPoint);
+            const finalPoint = nearestEnd || snappedPoint;
+
+            if (currentMode === 'wall') {
+                startWallDrawing(finalPoint);
+            } else if (currentMode === 'delete') {
+                const target = canvas.findTarget(options.e);
+                if (target && target.objectType) {
+                    canvas.remove(target);
+                    objects.splice(objects.indexOf(target), 1);
+                    canvas.renderAll();
+                }
+            } else if (currentMode === 'place' && currentItemType) {
+                placeItem(finalPoint);
+            }
+        });
+
+        canvas.on('mouse:move', function(options) {
+            if (isPanning) {
+                const deltaX = options.e.clientX - lastPosX;
+                const deltaY = options.e.clientY - lastPosY;
+                lastPosX = options.e.clientX;
+                lastPosY = options.e.clientY;
+                
+                canvas.relativePan({ x: deltaX, y: deltaY });
+                updateGrid();
+                return;
+            }
+
+            if (isDrawing && currentMode === 'wall' && currentWall) {
+                const pointer = canvas.getPointer(options.e);
+                updateWallDrawing(snapToGrid(pointer));
+            }
+        });
+
+        canvas.on('mouse:up', function() {
+            if (isPanning) {
+                isPanning = false;
+                canvas.defaultCursor = currentMode === 'wall' ? 'crosshair' : 
+                                     currentMode === 'delete' ? 'pointer' : 
+                                     currentMode === 'place' ? 'pointer' : 'default';
+            }
+            
+            if (currentMode === 'wall' && isDrawing) {
+                finalizeWall();
+            }
+        });
+
+        // Zoom with mouse wheel
+        canvas.on('mouse:wheel', function(options) {
+            options.e.preventDefault();
+            options.e.stopPropagation();
+            
+            const delta = options.e.deltaY;
+            let zoom = canvas.getZoom();
+            zoom *= 0.999 ** delta;
+            zoom = Math.max(MIN_ZOOM, Math.min(zoom, MAX_ZOOM));
+            
+            const point = {
+                x: options.e.offsetX,
+                y: options.e.offsetY
+            };
+            
+            canvas.zoomToPoint(point, zoom);
+            updateGrid();
+        });
+
+        // Object Transformations
+        canvas.on('object:moving', function(options) {
+            const obj = options.target;
+            const snappedPos = snapToGrid({ x: obj.left, y: obj.top });
+            obj.set({
+                left: snappedPos.x,
+                top: snappedPos.y
+            });
+        });
+
+        // Window Resize Handling
+        window.addEventListener('resize', function() {
+            setCanvasSize();
+            updateGrid();
+        });
+
+        // Keyboard Shortcuts
+        document.addEventListener('keydown', function(e) {
+            // Space + drag for panning
+            if (e.code === 'Space' && !isPanning) {
+                isPanning = true;
+                canvas.defaultCursor = 'grab';
+            }
+            
+            // Escape to cancel current action
+            if (e.key === 'Escape') {
+                if (isDrawing && currentWall) {
+                    canvas.remove(currentWall);
+                    isDrawing = false;
+                    currentWall = null;
+                    dimensionDisplay.textContent = '';
+                }
+                setSelectMode();
+            }
+        });
+
+        document.addEventListener('keyup', function(e) {
+            if (e.code === 'Space' && isPanning) {
+                isPanning = false;
+                canvas.defaultCursor = currentMode === 'wall' ? 'crosshair' : 
+                                     currentMode === 'delete' ? 'pointer' : 
+                                     currentMode === 'place' ? 'pointer' : 'default';
+            }
+        });
+
+        // Context Menu Handling
+        canvas.getElement().addEventListener('contextmenu', function(e) {
+            e.preventDefault();
+            return false;
+        });
+
+        // Initial Setup
+        setSelectMode();
+        updateZoomDisplay();
+    });
+    </script>
 </body>
 </html>
