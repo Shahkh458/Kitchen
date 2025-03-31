@@ -1,40 +1,49 @@
 document.addEventListener('DOMContentLoaded', function() {
-  const furnitureItems = JSON.parse(localStorage.getItem('furnitureItems')) || [];
+  const designItems = JSON.parse(localStorage.getItem('designItems')) || [];
   const tableBody = document.querySelector('#cost-table tbody');
-  
-  // Group items by type and count quantities
+
   const itemCounts = {};
-  furnitureItems.forEach(item => {
-    if (!itemCounts[item.type]) {
-      itemCounts[item.type] = {
-        count: 0,
-        cost: item.cost
-      };
+  designItems.forEach(item => {
+    const key = `${item.type}-${item.finish}`;
+    if (!itemCounts[key]) {
+      itemCounts[key] = { count: 0, cost: item.cost, type: item.type };
     }
-    itemCounts[item.type].count++;
+    itemCounts[key].count++;
   });
-  
-  // Populate the table
+
   let grandTotal = 0;
-  for (const [type, data] of Object.entries(itemCounts)) {
+  for (const [key, data] of Object.entries(itemCounts)) {
     const total = data.count * data.cost;
     grandTotal += total;
-    
     const row = document.createElement('tr');
     row.innerHTML = `
-      <td>${type.charAt(0).toUpperCase() + type.slice(1)}</td>
-      <td>${data.count}</td>
+      <td>${data.type}</td>
+      <td><input type="number" value="${data.count}" min="1" onchange="updateTotal(this, '${key}', ${data.cost})"></td>
       <td>$${data.cost}</td>
-      <td>$${total}</td>
+      <td id="total-${key}">$${total}</td>
     `;
     tableBody.appendChild(row);
   }
-  
-  // Update grand total
+
   document.getElementById('grand-total').textContent = `$${grandTotal}`;
-  
-  // Print button functionality
-  document.getElementById('print-estimate').addEventListener('click', function() {
-    window.print();
-  });
+
+  document.getElementById('print-estimate').addEventListener('click', () => window.print());
 });
+
+function updateTotal(input, key, unitCost) {
+  const newCount = parseInt(input.value);
+  const totalCell = document.getElementById(`total-${key}`);
+  const newTotal = newCount * unitCost;
+  totalCell.textContent = `$${newTotal}`;
+  recalculateGrandTotal();
+}
+
+function recalculateGrandTotal() {
+  const rows = document.querySelectorAll('#cost-table tbody tr');
+  let grandTotal = 0;
+  rows.forEach(row => {
+    const total = parseFloat(row.cells[3].textContent.replace('$', ''));
+    grandTotal += total;
+  });
+  document.getElementById('grand-total').textContent = `$${grandTotal}`;
+}

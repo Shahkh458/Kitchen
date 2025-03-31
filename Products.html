@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Our Products - Furniture Studio</title>
+  <link rel="stylesheet" href="styles/style.css">
+</head>
+<body>
+  <header>
+    <div class="logo">
+      <img src="images/logo.png" alt="Furniture Logo">
+    </div>
+    <nav>
+      <ul>
+        <li><a href="index.html">Home</a></li>
+        <li><a href="products.html" class="active">Products</a></li>
+        <li><a href="kitchen-2d.html">2D Planner</a></li>
+        <li><a href="3d-modeling.html">3D Designer</a></li>
+        <li><a href="contact.html">Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main class="products-container">
+    <h1 class="page-title">Our Premium Furniture Collection</h1>
+    <div class="filter-buttons">
+      <button class="filter-btn active" data-filter="all">All Products</button>
+      <button class="filter-btn" data-filter="kitchen">Modular Kitchen</button>
+      <button class="filter-btn" data-filter="wardrobe">Modular Wardrobes</button>
+      <button class="filter-btn" data-filter="tvunit">TV Unit</button>
+      <button class="filter-btn" data-filter="temple">Temple</button>
+      <button class="filter-btn" data-filter="study">Study Table</button>
+      <button class="filter-btn" data-filter="bar">Bar Unit</button>
+    </div>
+    <div class="products-grid" id="products-grid"></div>
+  </main>
+
+  <footer>
+    <p>&copy; 2025 Advik Kitchens And Interiors. All rights reserved.</p>
+  </footer>
+
+  <script>
+    const products = [
+      { id: 1, title: "Modern Modular Kitchen", category: "kitchen", price: "₹1,25,000", image: "images/kitchen-1.jpg", description: "Premium modular kitchen with soft-close drawers" },
+      { id: 2, title: "Walk-in Wardrobe", category: "wardrobe", price: "₹85,000", image: "images/wardrobe-1.jpg", description: "Spacious wardrobe with mirror shutters" },
+      { id: 3, title: "Entertainment TV Unit", category: "tvunit", price: "₹45,000", image: "images/tvunit-1.jpg", description: "Modern TV unit with ample storage" },
+      { id: 4, title: "Wooden Temple Unit", category: "temple", price: "₹25,000", image: "images/temple-1.jpg", description: "Handcrafted wooden temple unit" },
+      { id: 5, title: "Ergonomic Study Table", category: "study", price: "₹18,000", image: "images/study-1.jpg", description: "Adjustable height study table" },
+      { id: 6, title: "Premium Bar Unit", category: "bar", price: "₹65,000", image: "images/bar-1.jpg", description: "Luxury bar unit with wine rack" },
+      { id: 7, title: "L-shaped Kitchen", category: "kitchen", price: "₹1,50,000", image: "images/kitchen-2.jpg", description: "Space-saving L-shaped kitchen" },
+      { id: 8, title: "Sliding Wardrobe", category: "wardrobe", price: "₹75,000", image: "images/wardrobe-2.jpg", description: "4-door sliding wardrobe" }
+    ];
+
+    const productsGrid = document.getElementById('products-grid');
+    const filterBtns = document.querySelectorAll('.filter-btn');
+
+    displayProducts(products);
+    filterBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        filterBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const filter = btn.dataset.filter;
+        displayProducts(filter === 'all' ? products : products.filter(p => p.category === filter));
+      });
+    });
+
+    function displayProducts(productsToDisplay) {
+      productsGrid.innerHTML = '';
+      productsToDisplay.forEach(product => {
+        const card = document.createElement('div');
+        card.className = 'product-card';
+        card.innerHTML = `
+          <img src="${product.image}" alt="${product.title}" class="product-image" onerror="this.src='https://via.placeholder.com/280x200';">
+          <div class="product-info">
+            <span class="product-category">${formatCategory(product.category)}</span>
+            <h3 class="product-title">${product.title}</h3>
+            <p class="product-price">${product.price}</p>
+            <a href="kitchen-2d.html?product=${product.id}" class="product-btn">Design Now</a>
+            <a href="contact.html?product=${product.id}" class="product-btn">Enquire Now</a>
+          </div>
+        `;
+        productsGrid.appendChild(card);
+      });
+    }
+
+    function formatCategory(category) {
+      const names = { kitchen: "Modular Kitchen", wardrobe: "Modular Wardrobe", tvunit: "TV Unit", temple: "Temple Unit", study: "Study Table", bar: "Bar Unit" };
+      return names[category] || category;
+    }
+  </script>
+</body>
+</html>

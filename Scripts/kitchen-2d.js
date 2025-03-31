@@ -1,89 +1,80 @@
 document.addEventListener('DOMContentLoaded', function () {
-  const canvas = new fabric.Canvas('kitchen-canvas');
-  let items = []; // Store added items for costing
+  const canvas = new fabric.Canvas('kitchen-canvas', { backgroundColor: '#f0f0f0' });
+  let items = [];
+  let isDrawing = false;
+  let activeWall;
 
-  // Load images for kitchen elements
-  const wallImg = new Image();
-  wallImg.src = 'images/wall.png';
-
-  const windowImg = new Image();
-  windowImg.src = 'images/window.png';
-
-  const doorImg = new Image();
-  doorImg.src = 'images/door.png';
-
-  const cabinetImg = new Image();
-  cabinetImg.src = 'images/cabinet.png';
-
-  const sinkImg = new Image();
-  sinkImg.src = 'images/sink.png';
-
-  const ovenImg = new Image();
-  ovenImg.src = 'images/oven.png';
-
-  // Add Wall
-  document.getElementById('add-wall').addEventListener('click', function () {
-    fabric.Image.fromURL(wallImg.src, function (img) {
-      img.scaleToWidth(200); // Resize image
-      canvas.add(img);
-      items.push({ type: 'Wall', cost: 50 });
-    });
+  // Grid background
+  canvas.setBackgroundImage('images/grid.png', canvas.renderAll.bind(canvas), {
+    scaleX: 0.5,
+    scaleY: 0.5,
+    repeat: 'repeat'
   });
 
-  // Add Window
-  document.getElementById('add-window').addEventListener('click', function () {
-    fabric.Image.fromURL(windowImg.src, function (img) {
-      img.scaleToWidth(100); // Resize image
-      canvas.add(img);
-      items.push({ type: 'Window', cost: 100 });
+  // Images
+  const images = {
+    wall: 'images/wall.png',
+    window: 'images/window.png',
+    door: 'images/door.png',
+    baseCabinet: 'images/base-cabinet.png',
+    wallCabinet: 'images/wall-cabinet.png',
+    tallUnit: 'images/tall-unit.png',
+    sink: 'images/sink.png',
+    oven: 'images/oven.png'
+  };
+
+  // Custom wall drawing
+  canvas.on('mouse:down', (o) => {
+    if (!isDrawing) return;
+    const pointer = canvas.getPointer(o.e);
+    activeWall = new fabric.Line([pointer.x, pointer.y, pointer.x, pointer.y], {
+      stroke: 'black',
+      strokeWidth: 5,
+      selectable: true
     });
+    canvas.add(activeWall);
+  });
+  canvas.on('mouse:move', (o) => {
+    if (!isDrawing || !activeWall) return;
+    const pointer = canvas.getPointer(o.e);
+    activeWall.set({ x2: pointer.x, y2: pointer.y });
+    canvas.renderAll();
+  });
+  canvas.on('mouse:up', () => {
+    if (isDrawing && activeWall) {
+      items.push({ type: 'Wall', cost: 50, finish: 'default' });
+      activeWall = null;
+    }
+    isDrawing = false;
   });
 
-  // Add Door
-  document.getElementById('add-door').addEventListener('click', function () {
-    fabric.Image.fromURL(doorImg.src, function (img) {
-      img.scaleToWidth(80); // Resize image
-      canvas.add(img);
-      items.push({ type: 'Door', cost: 150 });
-    });
-  });
+  // Event listeners
+  document.getElementById('add-wall').addEventListener('click', () => isDrawing = true);
 
-  // Add Cabinet
-  document.getElementById('add-cabinet').addEventListener('click', function () {
-    fabric.Image.fromURL(cabinetImg.src, function (img) {
-      img.scaleToWidth(100); // Resize image
+  function addItem(type, width, cost) {
+    fabric.Image.fromURL(images[type] || 'https://via.placeholder.com/100', (img) => {
+      img.scaleToWidth(width);
       canvas.add(img);
-      items.push({ type: 'Cabinet', cost: 200 });
+      items.push({ type, cost, finish: 'default' });
     });
-  });
+  }
 
-  // Add Sink
-  document.getElementById('add-sink').addEventListener('click', function () {
-    fabric.Image.fromURL(sinkImg.src, function (img) {
-      img.scaleToWidth(80); // Resize image
-      canvas.add(img);
-      items.push({ type: 'Sink', cost: 120 });
-    });
-  });
+  document.getElementById('add-window').addEventListener('click', () => addItem('window', 100, 100));
+  document.getElementById('add-door').addEventListener('click', () => addItem('door', 80, 150));
+  document.getElementById('add-base-cabinet').addEventListener('click', () => addItem('baseCabinet', 100, 200));
+  document.getElementById('add-wall-cabinet').addEventListener('click', () => addItem('wallCabinet', 80, 150));
+  document.getElementById('add-tall-unit').addEventListener('click', () => addItem('tallUnit', 120, 300));
+  document.getElementById('add-sink').addEventListener('click', () => addItem('sink', 80, 120));
+  document.getElementById('add-oven').addEventListener('click', () => addItem('oven', 90, 300));
 
-  // Add Oven
-  document.getElementById('add-oven').addEventListener('click', function () {
-    fabric.Image.fromURL(ovenImg.src, function (img) {
-      img.scaleToWidth(90); // Resize image
-      canvas.add(img);
-      items.push({ type: 'Oven', cost: 300 });
-    });
-  });
-
-  // Clear Canvas
-  document.getElementById('clear-canvas').addEventListener('click', function () {
+  document.getElementById('clear-canvas').addEventListener('click', () => {
     canvas.clear();
+    canvas.setBackgroundColor('#f0f0f0', canvas.renderAll.bind(canvas));
     items = [];
   });
 
-  // Calculate Cost
-  document.getElementById('calculate-cost').addEventListener('click', function () {
-    localStorage.setItem('kitchenItems', JSON.stringify(items));
+  document.getElementById('calculate-cost').addEventListener('click', () => {
+    localStorage.setItem('designItems', JSON.stringify(items));
     window.location.href = 'costing.html';
   });
 });

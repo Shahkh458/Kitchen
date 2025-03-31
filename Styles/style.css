@@ -1,4 +1,3 @@
-/* Base Styles */
 * {
   margin: 0;
   padding: 0;
@@ -18,7 +17,8 @@ header {
   padding: 1rem 2rem;
   background-color: #fff;
   box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-  position: relative;
+  position: sticky;
+  top: 0;
   z-index: 100;
 }
 
@@ -43,7 +43,6 @@ nav a:hover, nav a.active {
   color: #4a6bff;
 }
 
-/* Hero Section */
 .hero {
   display: flex;
   align-items: center;
@@ -79,7 +78,6 @@ nav a:hover, nav a.active {
   box-shadow: 0 10px 30px rgba(0,0,0,0.1);
 }
 
-/* Buttons */
 .btn {
   display: inline-block;
   padding: 0.8rem 1.5rem;
@@ -129,7 +127,6 @@ nav a:hover, nav a.active {
   margin-top: 2rem;
 }
 
-/* Footer */
 footer {
   text-align: center;
   padding: 2rem;
@@ -137,20 +134,175 @@ footer {
   margin-top: 2rem;
 }
 
-/* Responsive Design */
+#kitchen-canvas, #3d-container {
+  border: 1px solid #ddd;
+  background: #fff;
+}
+
+.kitchen-2d, .costing-page {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.toolbar {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.modeling-controls {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  background: rgba(255,255,255,0.8);
+  padding: 15px;
+  border-radius: 8px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+#cost-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
+}
+
+#cost-table th, #cost-table td {
+  padding: 0.8rem;
+  border: 1px solid #ddd;
+  text-align: left;
+}
+
+#cost-table tfoot {
+  font-weight: bold;
+  background: #f8f9fa;
+}
+
+.action-buttons {
+  margin-top: 1rem;
+  display: flex;
+  gap: 1rem;
+}
+
+.products-container {
+  max-width: 1200px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
+
+.page-title {
+  text-align: center;
+  margin-bottom: 2rem;
+  font-size: 2.5rem;
+  color: #222;
+}
+
+.filter-buttons {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.filter-btn {
+  padding: 0.5rem 1.5rem;
+  background-color: #fff;
+  border: 1px solid #ddd;
+  border-radius: 50px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.filter-btn:hover, .filter-btn.active {
+  background-color: #4a6bff;
+  color: white;
+  border-color: #4a6bff;
+}
+
+.products-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 2rem;
+}
+
+.product-card {
+  background-color: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+  transition: transform 0.3s;
+}
+
+.product-card:hover {
+  transform: translateY(-5px);
+}
+
+.product-image {
+  height: 200px;
+  width: 100%;
+  object-fit: cover;
+}
+
+.product-info {
+  padding: 1.5rem;
+}
+
+.product-category {
+  color: #4a6bff;
+  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+  display: block;
+}
+
+.product-title {
+  font-size: 1.2rem;
+  margin-bottom: 0.5rem;
+}
+
+.product-price {
+  font-weight: bold;
+  color: #222;
+  margin-bottom: 1rem;
+}
+
+.product-btn {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  background-color: #4a6bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background-color 0.3s;
+  margin-right: 0.5rem;
+}
+
+.product-btn:hover {
+  background-color: #3a5bef;
+}
+
 @media (max-width: 768px) {
   .hero {
     flex-direction: column;
     padding: 2rem 1rem;
   }
-  
   .hero-content {
     padding-right: 0;
     margin-bottom: 2rem;
     text-align: center;
   }
-  
   nav ul {
     gap: 1rem;
+    flex-wrap: wrap;
+  }
+  .products-grid {
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
   }
 }
